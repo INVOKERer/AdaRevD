@@ -1,0 +1,147 @@
+# general settings ./train_4gpu.sh Motion_Deblurring/Options/GoPro-AdaRevIDB-Adaptive-4gpu.yml
+name: Deblurring_AdaRevID-B_UFPNet_Adaptiveloss_ema
+#  Deblurring_RevCol32_1naf28_p_LN_dcnv3_detdecx7_2decoderSv2_np_freqloss_ema
+#  Deblurring_MIMOUNeXt32_dctdec_DCNv3_center_feature_scale_dec_win9_frlossV2_ema # channel_mlp_add
+model_type: ImageCleanModel
+scale: 1
+num_gpu: 4  # set num_gpu: 0 for cpu mode
+manual_seed: 100
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: TrainSet
+    type: Dataset_PairedImage
+    dataroot_gt: ~/Data1/mxt/GoPro/train/target_crops
+    dataroot_lq: ~/Data1/mxt/GoPro/train/input_crops
+#    dataroot_gt: /data/mxt_data/GoPro/train/target_crops
+#    dataroot_lq: /data/mxt_data/GoPro/train/input_crops
+    geometric_augs: true
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 4
+
+    ### ------- Training on single fixed-patch size 128x128---------
+    mini_batch_sizes: [4]
+    iters: [40000]
+    gt_size: 384
+    gt_sizes: [384]
+    ### ------------------------------------------------------------
+
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: ValSet
+    type: Dataset_PairedImage
+    dataroot_gt: ~/Data1/mxt/GoPro/val/target_crops
+    dataroot_lq: ~/Data1/mxt/GoPro/val/input_crops
+#    dataroot_gt: /data/mxt_data/GoPro/val/target_crops
+#    dataroot_lq: /data/mxt_data/GoPro/val/input_crops
+    io_backend:
+      type: disk
+
+network_g:
+  type: AdaRevID
+  in_channels: 3
+  out_channels: 3
+  width: 64 # [64, 128, 256, 512] # [32, 64, 128, 256]
+#  decoder_layers: [1, 1, 1, 1]
+  decoder_layers: [1, 1, 1, 1]
+  drop_path: 0.
+  train_size: [384, 384]
+  overlap_size: [32, 32]
+  encoder: UFPNet # NAFNet # UFPNet
+#  save_memory: true
+  save_memory_decoder: false
+#  use_amp: true # stem_multi # stem_once
+  state_dict_pth_encoder: # /home/ubuntu/106-48t/personal_data/mxt/exp_results/ckpt/UFPNet/train_on_GoPro/net_g_latest.pth
+  state_dict_pth_decoder: # /home/ubuntu/106-48t/personal_data/mxt/exp_results/ckpt/UFPNet/train_on_GoPro/net_g_latest.pth
+  state_dict_pth_classifier: /home/ubuntu/90t/personal_data/mxt/MXT/ckpts/classifier/RealBlur_J.pth
+#  baseblock_enc: [ naf ]
+  baseblock: [fcnaf, fcnaf, fcnaf, fcnaf] # [naf, fnaf, dcnv3, fdcnv3] Fattn_FreqLC Ffftformer
+  # [naf, dcnv3, fnaf, fdcnv3] [naf, naf, naf, naf] [fcnaf, fcnaf, fcnaf, fcnaf] #
+  test_only: true # true
+  pretrain: false
+  dx: e3 # e3 e4 # fd4
+  classifier_type: hard_simple # hard_simple # single
+  num_classes: 6
+  exit_idx: [4, 4, 4, 3, 3, 2]
+  # Big: 0.05: [4, 4, 4, 3, 3, 2]
+  # large: 0.05: [7, 7, 5, 5, 3, 3]
+  decoder_idx: 8
+  exit_threshold: 0.05
+  cal_num_decoders: true
+#  return_cls: true
+#  save_feature: true
+path:
+  pretrain_network_g: /home/ubuntu/90t/personal_data/mxt/MXT/RevIR/experiments/Deblurring_AdaRevID-B_UFPNet_freqloss_ema/models/net_g_200000.pth
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  total_iter: 40000
+  warmup_iter: -1 # 4000 # -1 # no warm up
+  use_grad_clip: true
+  ema_decay: 0.999
+  # Split 300k iterations into two cycles.
+  # 1st cycle: fixed 3e-4 LR for 92k iters.
+  # 2nd cycle: cosine annealing (3e-4 to 1e-6) for 208k iters.
+  scheduler:
+    type: TrueCosineAnnealingLR
+    T_max: 40000
+    eta_min: !!float 1e-7
+
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: true
+
+  optim_g:
+    type: AdamW
+    lr: !!float 1e-3 # !!float 1e-3
+    weight_decay: !!float 1e-3
+    betas: [0.9, 0.9]
+
+  # losses
+  pixel_opt:
+    type: AdaptiveLoss # ApeV2Loss # AdaptiveLoss # FRLoss # MultiScaleFreqLoss # FreqLoss # PSNRLoss, L1Loss
+    loss_weight: 1 # 1,
+    reduction: mean
+
+
+# validation settings
+val:
+  window_size: 8
+  val_freq: !!float 4e4 # !!float 4e3
+  save_img: false
+  rgb2bgr: true
+  use_image: true
+  max_minibatch: 8
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4 # !!float 4e3
+  use_tb_logger: true # false # true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
