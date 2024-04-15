@@ -15,7 +15,7 @@
 2. To train the main body of AdaRevD, run
  ```
 cd AdaRevD
-./train_8gpu.sh Motion_Deblurring/Options/GoPro-AdaRevIDB-pretrain-8gpu.yml
+./train_4gpu.sh Motion_Deblurring/Options/GoPro-AdaRevIDB-pretrain-4gpu.yml
 ```
 3. To train the classifier of AdaRevD, modify the pretrain_network_g in GoPro-AdaRevIDB-classify-4gpu.yml and run
  ```
