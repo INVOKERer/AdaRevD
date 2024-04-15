@@ -5,7 +5,7 @@
 
 
 
-**Paper**: 在等专利号。。。
+**Paper**: (https://github.com/INVOKERer/AdaRevD/blob/master/AdaRevD.pdf)
 
 
 ## Quick Run
