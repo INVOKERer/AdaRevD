@@ -28,17 +28,9 @@ To test the pre-trained models of Deblur [百度网盘](https://pan.baidu.com/s/
 python Motion_Deblurring/val.py 
 ```
 
-
 ## Results
 Results on GoPro, HIDE, Realblur test sets:
 [百度网盘](https://pan.baidu.com/s/1xoEgsisdnMnjbEHcCXOa2Q)(提取码:27ex)
-
-## Reference Code:
-- https://github.com/Fangzhenxuan/UFPDeblur
-- https://github.com/megvii-research/NAFNet
-- https://github.com/megvii-research/RevCol
-- https://github.com/littlepure2333/APE
-- https://github.com/INVOKERer/DeepRFT/tree/AAAI2023
 
 ## Citation
 If you use , please consider citing:
@@ -53,8 +45,15 @@ If you use , please consider citing:
 ## Contact
 If you have any question, please contact mxt_invoker1997@163.com
 
-**Acknowledgment:** This code is based on the [BasicSR](https://github.com/xinntao/BasicSR) toolbox. 
-
 ## Our Related Works
 - Deep Residual Fourier Transformation for Single Image Deblurring, arXiv 2021. [Paper](https://arxiv.org/abs/2111.11745) | [Code](https://github.com/INVOKERer/DeepRFT)
 - Intriguing Findings of Frequency Selection for Image Deblurring, AAAI 2023. [Paper](https://arxiv.org/abs/2111.11745) | [Code](https://github.com/DeepMed-Lab-ECNU/DeepRFT-AAAI2023)
+
+## Reference Code:
+- https://github.com/Fangzhenxuan/UFPDeblur
+- https://github.com/megvii-research/NAFNet
+- https://github.com/megvii-research/RevCol
+- https://github.com/littlepure2333/APE
+- https://github.com/INVOKERer/DeepRFT/tree/AAAI2023
+
+**Acknowledgment:** This code is based on the [BasicSR](https://github.com/xinntao/BasicSR) toolbox. 
