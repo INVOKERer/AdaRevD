@@ -5,7 +5,7 @@
 
 
 
-**Paper**: (https://github.com/INVOKERer/AdaRevD/blob/master/AdaRevD.pdf)
+[Paper](https://github.com/INVOKERer/AdaRevD/blob/master/AdaRevD.pdf)
 
 
 ## Quick Run
