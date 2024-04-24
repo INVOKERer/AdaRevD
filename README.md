@@ -12,7 +12,7 @@ Paper: https://github.com/INVOKERer/AdaRevD/blob/master/AdaRevD.pdf
 
 ## Training
 1. Download GoPro training and testing data
-2. To train the main body of AdaRevD, run
+2. To train the main body of AdaRevD, download the pretrained model from [NAFNet](https://github.com/megvii-research/NAFNet) or [UFPNet](https://github.com/Fangzhenxuan/UFPDeblur), modify state_dict_pth_encoder in GoPro-AdaRevIDB-pretrain-4gpu.yml and run
  ```
 cd AdaRevD
 ./train_4gpu.sh Motion_Deblurring/Options/GoPro-AdaRevIDB-pretrain-4gpu.yml
