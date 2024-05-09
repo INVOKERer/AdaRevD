@@ -4,8 +4,8 @@ import torch.nn.functional as F
 import numbers
 from einops import rearrange
 from basicsr.models.archs.arch_util import fft_bench_complex_mlp
-from basicsr.models.archs.dct_util import *
-from basicsr.models.archs.ops_dcnv3.dcnv3_torch import DCNv3_pytorch, DCNv3_pytorch_aaai, DCNv3_pytorch_dual
+# from basicsr.models.archs.dct_util import *
+# from basicsr.models.archs.ops_dcnv3.dcnv3_torch import DCNv3_pytorch, DCNv3_pytorch_aaai, DCNv3_pytorch_dual
 def to_3d(x):
     return rearrange(x, 'b c h w -> b (h w) c')
 
