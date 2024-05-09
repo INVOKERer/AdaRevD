@@ -7,7 +7,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from einops import rearrange
 from torch.nn.init import xavier_uniform_, constant_
 from basicsr.utils import get_root_logger
-from basicsr.models.archs.dct_util import *
+# from basicsr.models.archs.dct_util import *
 from basicsr.models.archs.win_util import *
 from basicsr.models.archs.norm_util import *
 # from basicsr.models.archs.attn_util import *
