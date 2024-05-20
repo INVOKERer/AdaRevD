@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from basicsr.models.archs.arch_util import * # LayerNorm2d, window_reversex, window_partitionx, FFT_ReLU, Attention_win
 from basicsr.models.archs.local_arch import Local_Base
 from basicsr.models.archs.norm_util import *
-from basicsr.models.archs.attn_util import *
+# from basicsr.models.archs.attn_util import *
 
 class SimpleGate(nn.Module):
     def __init__(self,):
