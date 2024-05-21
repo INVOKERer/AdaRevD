@@ -1803,7 +1803,7 @@ class PatchAdaRevIDSlideV2(nn.Module):
         # if encoder == 'UFPNet':
         # self.encoder = UFPNetLocal(width=width)
         if encoder == 'UFPNet':
-            self.encoder = UFPNetLocal(width=width)
+            self.encoder = UFPNet(width=width)
         # elif encoder == 'FFTformer':
         #     self.encoder = fftformerEncoder()
         #     self.encoderX = fftformerEncoderPro()
