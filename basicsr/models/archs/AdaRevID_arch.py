@@ -1666,6 +1666,539 @@ class AdaRevIDSlide(nn.Module):
 
         d3_img = self.outputs[self.decoder_idx-1](e0)
         return d3_img
+class AdaRevIDSlideV2(nn.Module):
+    def __init__(self, width=64, in_channels=3, out_channels=3,
+                 decoder_layers=[1, 1, 1, 1], baseblock=['naf', 'naf', 'naf', 'naf'],
+                 kernel_size=19, drop_path=0.0, train_size=[384, 384], overlap_size=[32, 32],  # save_memory=True,
+                 save_memory_decoder=True, encoder='UFPNet',
+                 pretrain=False, use_amp=False,  # stem_method='stem_multi',
+                 state_dict_pth_encoder='/home/ubuntu/106-48t/personal_data/mxt/exp_results/ckpt/UFPNet/train_on_GoPro/net_g_latest.pth',
+                 state_dict_pth_classifier=None,
+                 state_dict_pth_decoder=None,
+                 combine_train=False, test_only=True, cal_num_decoders=False, decoder_idx=4, dx='', classifier_type='single', num_classes=5, exit_idx=[4,3,2,1,0],
+                 exit_threshold=0.25) -> None:
+        super().__init__()
+        self.classifier_type = classifier_type
+        self.exit_idx = exit_idx
+        self.decoder_idx = decoder_idx
+        self.train_size = train_size
+        self.overlap_size = overlap_size
+        print(self.train_size, self.overlap_size)
+        self.kernel_size = self.train_size
+        self.inp_channels = 3
+        self.out_channels = 3
+        self.up_scale = 1
+        self.cal_num_decoders = cal_num_decoders
+        self.num_decoders = 0
+        self.overlap_size_up = (self.overlap_size[0] * self.up_scale, self.overlap_size[1] * self.up_scale)
+        # self.kernel_size = [train_size, train_size]
+        self.kernel_size_up = [self.train_size[0] * self.up_scale, self.train_size[1] * self.up_scale]
+        self.num_subdenet = len(baseblock)
+        self.channels = width
+        self.test_only = test_only
+        thr_scale = 1
+        if isinstance(exit_threshold, list):
+            self.exit_threshold = [x * thr_scale for x in exit_threshold]
+        else:
+            self.exit_threshold = [exit_threshold * thr_scale] * (self.num_subdenet-1)
+        self.pretrain = pretrain
+        self.use_amp = use_amp
+        # self.num_subnet = num_subnet
+        self.combine_train = combine_train
+        channels = [width, width * 2, width * 4, width * 8]
+        middle_blk_num = 1
+        chan = 2 * channels[-1]
+        # self.downs_mid = nn.Conv2d(channels[-1], chan, 2, 2)
+        # self.middle_blks = \
+        #     nn.Sequential(
+        #         *[NAFBlock(chan) for _ in range(middle_blk_num)]
+        #     )
+        self.dx = dx
+        if not self.pretrain or state_dict_pth_classifier is not None:
+            self.avgpool = nn.AdaptiveAvgPool2d(1)
+            if self.classifier_type == 'hard_simple':
+                if dx == 'e4':
+                    self.ape = nn.Sequential(
+                        NAFBlock(chan),
+                        Classifier(chan, num_classes=num_classes)
+                    )
+                elif dx == 'e3':
+                    self.ape = nn.Sequential(
+                        nn.Conv2d(channels[-1], chan, 2, 2),
+                        NAFBlock(chan),
+                        Classifier(chan, num_classes=num_classes)
+                    )
+            elif self.classifier_type == 'single':
+                if dx == 'fd4_d4':
+                    self.ape = Classifier(2 * channels[-1], 1)
+                elif dx == 'fd4':
+                    self.ape = Classifier(channels[-1], 1)
+                elif dx == 'fd3':
+                    self.ape = Classifier(channels[-2], 1)
+                elif dx == 'fd2':
+                    self.ape = Classifier(channels[-3], 1)
+                elif dx == 'fd1':
+                    self.ape = Classifier(channels[0], 1)
+                elif dx == '_d4':
+                    self.ape = Classifier(channels[-1], 1)
+                elif dx == 'fd3_d4':
+                    self.ape = Classifier(channels[-2] + channels[-1], 1)
+                elif dx == 'fd2_d4':
+                    self.ape = Classifier(channels[-3] + channels[-1], 1)
+                elif dx == 'fd1_d4':
+                    self.ape = Classifier(channels[0] + channels[-1], 1)
+            else:
+                if dx == 'fd4_d4':
+                    self.ape = nn.ModuleList([Classifier(2 * channels[-1], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd4':
+                    self.ape = nn.ModuleList([Classifier(channels[-1], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd3':
+                    self.ape = nn.ModuleList([Classifier(channels[-2], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd2':
+                    self.ape = nn.ModuleList([Classifier(channels[-3], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd1':
+                    self.ape = nn.ModuleList([Classifier(channels[0], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == '_d4':
+                    self.ape = nn.ModuleList([Classifier(channels[-1], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd3_d4':
+                    self.ape = nn.ModuleList(
+                        [Classifier(channels[-2] + channels[-1], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd2_d4':
+                    self.ape = nn.ModuleList(
+                        [Classifier(channels[-3] + channels[-1], 1) for _ in range(self.num_subdenet - 1)])
+                elif dx == 'fd1_d4':
+                    self.ape = nn.ModuleList(
+                        [Classifier(channels[0] + channels[-1], 1) for _ in range(self.num_subdenet - 1)])
+        if state_dict_pth_classifier is not None:
+            self.load_classifier(state_dict_pth_classifier)
+        self.subdenets = nn.ModuleList()
+        # self.encoder_feature_projs = nn.ModuleList()
+        self.conv_features = nn.ParameterList()
+        # print(channels)
+        h, w = train_size
+        # for i in range(len(channels)):
+        #     self.encoder_feature_projs.append(MLP_UHD([h, w, channels[i]], 1))
+        #     h, w = h//2, w//2
+        # self.encoder_feature_projs.append(MLP_UHD([h, w, chan], 4))
+        for i in range(len(channels)):
+            self.conv_features.append(
+                nn.Parameter(torch.ones((1, channels[i], 1, 1)),
+                             requires_grad=True))
+        self.conv_features.append(
+            nn.Parameter(torch.ones((1, chan, 1, 1)),
+                         requires_grad=True))
+
+
+        dp_rate = [x.item() for x in torch.linspace(0, drop_path, sum(decoder_layers))]
+
+        channels.reverse()
+        for i in range(self.num_subdenet):
+            first_col = False
+            self.subdenets.append(UniDecoder(channels=channels, layers=decoder_layers, kernel_size=kernel_size,
+                                             first_col=first_col, dp_rates=dp_rate, save_memory=save_memory_decoder,
+                                             baseblock=baseblock[i], train_size=train_size, sub_idx=(i+1)/self.num_subdenet))
+        if state_dict_pth_decoder is not None:
+            self.subdenets[0].load_pretain_model(state_dict_pth_decoder)
+
+        # if encoder == 'UFPNet':
+        # self.encoder = UFPNetLocal(width=width)
+        if encoder == 'UFPNet':
+            self.encoder = UFPNetLocal(width=width)
+        # elif encoder == 'FFTformer':
+        #     self.encoder = fftformerEncoder()
+        #     self.encoderX = fftformerEncoderPro()
+        else:
+            self.encoder = NAFNetLocal(width=width)
+
+        self.encoder.eval()
+
+        self.outputs = nn.ModuleList()
+
+        for i in range(self.num_subdenet):
+            self.outputs.append(nn.Sequential(
+                nn.Conv2d(width, out_channels, kernel_size=3, stride=1, padding=1, bias=True)
+                # LayerNorm(channels[0], eps=1e-6, data_format="channels_first")
+            ))
+    def load_classifier(self, state_dict_pth):
+        checkpoint = torch.load(state_dict_pth)
+        # print(checkpoint.keys())
+
+        # state_dict = checkpoint["params"]
+
+        self.ape.load_state_dict(checkpoint, strict=False)
+
+        print('-----------load classifier from ' + state_dict_pth + '----------------')
+    def grids(self, x, level=0):
+        b, c, h, w = x.shape
+        n_level = 2 ** level
+
+        assert b == 1
+        k1, k2 = self.kernel_size[0] // n_level, self.kernel_size[1] // n_level
+        k1 = min(h, k1)
+        k2 = min(w, k2)
+        overlap_size = [self.overlap_size[0] // n_level, self.overlap_size[1] // n_level]  # (64, 64)
+
+        stride = (k1 - overlap_size[0], k2 - overlap_size[1])
+
+        num_row = (h - overlap_size[0] - 1) // stride[0] + 1
+        num_col = (w - overlap_size[1] - 1) // stride[1] + 1
+
+        # import math
+        step_j = k2 if num_col == 1 else stride[1]  # math.ceil((w - stride[1]) / (num_col - 1) - 1e-8)
+        step_i = k1 if num_row == 1 else stride[0]  # math.ceil((h - stride[0]) / (num_row - 1) - 1e-8)
+
+        parts = []
+        idxes = []
+        i = 0  # 0~h-1
+        last_i = False
+        self.ek1, self.ek2 = None, None
+        while i < h and not last_i:
+            j = 0
+            if i + k1 >= h:
+                # if not self.ek1:
+                #     # print(step_i, i, k1, h)
+                #     self.ek1 = i + k1 - h # - self.overlap_size[0]
+                i = h - k1
+                last_i = True
+
+            last_j = False
+            while j < w and not last_j:
+                if j + k2 >= w:
+                    # if not self.ek2:
+                    #     self.ek2 = j + k2 - w # + self.overlap_size[1]
+                    j = w - k2
+                    last_j = True
+                parts.append(x[:, :, i:i + k1, j:j + k2])
+                idxes.append({'i': i * self.up_scale, 'j': j * self.up_scale})
+                j = j + step_j
+            i = i + step_i
+
+        parts = torch.cat(parts, dim=0)
+        if level == 0:
+            self.original_size = (b, self.out_channels, h * self.up_scale, w * self.up_scale)
+            self.stride = (stride[0] * self.up_scale, stride[1] * self.up_scale)
+            self.nr = num_row
+            self.nc = num_col
+            self.idxes = idxes
+        return parts
+
+    def get_overlap_matrix(self, h, w):
+        # if self.grid:
+        # if self.fuse_matrix_h1 is None:
+        self.h = h
+        self.w = w
+        self.ek1 = self.nr * self.stride[0] + self.overlap_size_up[0] * 2 - h
+        self.ek2 = self.nc * self.stride[1] + self.overlap_size_up[1] * 2 - w
+        # self.ek1, self.ek2 = 48, 224
+        # print(self.ek1, self.ek2, self.nr)
+        # print(self.overlap_size)
+        # self.overlap_size = [8, 8]
+        # self.overlap_size = [self.overlap_size[0] * 2, self.overlap_size[1] * 2]
+        self.fuse_matrix_w1 = torch.linspace(1., 0., self.overlap_size_up[1]).view(1, 1, self.overlap_size_up[1])
+        self.fuse_matrix_w2 = torch.linspace(0., 1., self.overlap_size_up[1]).view(1, 1, self.overlap_size_up[1])
+        self.fuse_matrix_h1 = torch.linspace(1., 0., self.overlap_size_up[0]).view(1, self.overlap_size_up[0], 1)
+        self.fuse_matrix_h2 = torch.linspace(0., 1., self.overlap_size_up[0]).view(1, self.overlap_size_up[0], 1)
+        self.fuse_matrix_ew1 = torch.linspace(1., 0., self.ek2).view(1, 1, self.ek2)
+        self.fuse_matrix_ew2 = torch.linspace(0., 1., self.ek2).view(1, 1, self.ek2)
+        self.fuse_matrix_eh1 = torch.linspace(1., 0., self.ek1).view(1, self.ek1, 1)
+        self.fuse_matrix_eh2 = torch.linspace(0., 1., self.ek1).view(1, self.ek1, 1)
+
+    def grids_inverse(self, outs, out_device=None, pix_max=1.):
+        if out_device is None:
+            out_device = outs.device
+        # print(out_device)
+
+        type_out = torch.uint8 if pix_max == 255. else torch.float32
+        # type_out = torch.int16
+        preds = torch.zeros(self.original_size, device=out_device, dtype=type_out)  # .to(out_device)
+        b, c, h, w = self.original_size
+        # print(self.original_size)
+        # outs = torch.clamp(outs, 0, 1) # * pix_max
+        # outs = outs.type(type_out)
+        # count_mt = torch.zeros((b, 1, h, w)).to(outs.device)
+        k1, k2 = self.kernel_size_up
+        k1 = min(h, k1)
+        k2 = min(w, k2)
+        # if not self.h or not self.w:
+        self.get_overlap_matrix(h, w)
+        # rounding_mode = 'floor'
+        for cnt, each_idx in enumerate(self.idxes):
+            i = each_idx['i']
+            j = each_idx['j']
+            if i != 0 and i + k1 != h:
+                outs[cnt, :, :self.overlap_size_up[0], :] = torch.mul(outs[cnt, :, :self.overlap_size_up[0], :],
+                                                                      self.fuse_matrix_h2.to(outs.device))
+                # print(outs[cnt, :,  i + k1 - self.overlap_size[0]:i + k1, :].shape,
+                #       self.fuse_matrix_h1.shape)
+            if i + k1 * 2 - self.ek1 < h:
+                outs[cnt, :, -self.overlap_size_up[0]:, :] = torch.mul(outs[cnt, :, -self.overlap_size_up[0]:, :],
+                                                                       self.fuse_matrix_h1.to(outs.device))
+            # print(self.fuse_matrix_eh1.dtype)
+            if i + k1 == h:
+                outs[cnt, :, :self.ek1, :] = torch.mul(outs[cnt, :, :self.ek1, :], self.fuse_matrix_eh2.to(outs.device))
+            if i + k1 * 2 - self.ek1 == h:
+                outs[cnt, :, -self.ek1:, :] = torch.mul(outs[cnt, :, -self.ek1:, :],
+                                                        self.fuse_matrix_eh1.to(outs.device))
+
+            if j != 0 and j + k2 != w:
+                outs[cnt, :, :, :self.overlap_size_up[1]] = torch.mul(outs[cnt, :, :, :self.overlap_size_up[1]],
+                                                                      self.fuse_matrix_w2.to(outs.device))
+            if j + k2 * 2 - self.ek2 < w:
+                # print(j, j + k2 - self.overlap_size[1], j + k2, self.fuse_matrix_w1.shape)
+                outs[cnt, :, :, -self.overlap_size_up[1]:] = torch.mul(outs[cnt, :, :, -self.overlap_size_up[1]:],
+                                                                       self.fuse_matrix_w1.to(outs.device))
+            if j + k2 == w:
+                # print('j + k2 == w: ', self.ek2, outs[cnt, :, :, :self.ek2].shape, self.fuse_matrix_ew1.shape)
+                outs[cnt, :, :, :self.ek2] = torch.mul(outs[cnt, :, :, :self.ek2], self.fuse_matrix_ew2.to(outs.device))
+            if j + k2 * 2 - self.ek2 == w:
+                # print('j + k2*2 - self.ek2 == w: ')
+                outs[cnt, :, :, -self.ek2:] = torch.mul(outs[cnt, :, :, -self.ek2:],
+                                                        self.fuse_matrix_ew1.to(outs.device))
+            # print(preds[0, :, i:i + k1, j:j + k2].shape)
+            # pred_win = outs[cnt, :, :, :].clone() * pix_max
+            # pred_win = pred_win.type(type_out)
+            # print(pred_win.dtype, preds.dtype, type_out, outs.dtype)
+            # print(outs[cnt, :, :, :].max())
+            preds[0, :, i:i + k1, j:j + k2] += outs[cnt, :, :, :].type(type_out).to(out_device)
+            # preds[0, :, i:i + k1, j:j + k2] += outs[cnt, :, :, :].to(out_device) * pix_max
+            # count_mt[0, 0, i:i + k1, j:j + k2] += 1.
+
+        del outs
+        torch.cuda.empty_cache()
+        return preds  # / count_mt
+
+    def forward(self, img, batch=None, pix_max=1., post_aug=False, out_device=None):
+        h, w = img.shape[-2:]
+        img_inp = check_image_size(img, 16)
+        with torch.no_grad():
+            e0, e1, e2, e3, e4 = self.encoder(img_inp)
+
+        features_t = [self.conv_features[0] * (e0),
+                      self.conv_features[1] * (e1),
+                      self.conv_features[2] * (e2),
+                      self.conv_features[3] * (e3),
+                      self.conv_features[4] * (e4)]
+        features = []
+        for i in range(len(features_t)):
+            features.append(self.grids(features_t[i], i))
+        all_batch = features[0].shape[0]
+        # print(all_batch)
+        # batch_num = all_batch // batch
+        if batch is not None:
+            batchs = range(0, all_batch, batch)
+
+            out_parts = []
+            # print(inp_img_.shape)
+            for batch_z in batchs:
+                if batch_z + batch <= all_batch:
+                    features_x = [x[batch_z:batch_z + batch, ...] for x in features]
+                    if len(features_x[0].shape) == 3:
+                        features_x = [x.unsqueeze(0) for x in features_x]
+                    out_parts.append(self.forward_feature(features_x))
+                else:
+                    features_x = [x[batch_z:, ...] for x in features]
+                    if len(features_x[0].shape) == 3:
+                        features_x = [x.unsqueeze(0) for x in features_x]
+                    out_parts.append(self.forward_feature(features_x))
+            out_parts = torch.cat(out_parts, dim=0)
+        else:
+            out_parts = self.forward_feature(features)
+        # print(out_parts.shape)
+
+        x = self.grids_inverse(out_parts, out_device=out_device, pix_max=pix_max)
+        # print(x.shape)
+        if self.cal_num_decoders:
+            return x[:, :, :h, :w] + img, self.num_decoders
+        else:
+            return x[:, :, :h, :w] + img
+    def forward_feature(self, features):
+
+        if self.pretrain:
+            return self._forward_pretrain(features)
+        else:
+            return self._forward(features)
+
+    def _forward(self, features):
+        x_tmp_out_list = []
+        e0, e1, e2, e3, e4 = features
+        # ics = self.ape(e4)
+        b, c, h, w = e0.shape
+        ics = []
+        num_tmp = 0
+        if self.classifier_type == 'hard_simple':
+            if self.dx == 'e4':
+                class_hard_simple = self.ape(e4)
+            elif self.dx == 'e3':
+                class_hard_simple = self.ape(e3)
+            # class_hard_simple = self.ape(e4)
+            class_hard_simple_idx = torch.argmax(class_hard_simple, dim=-1, keepdim=False)
+            out_x_idx = torch.tensor([self.exit_idx[i] for i in class_hard_simple_idx], device=e0.device)
+
+            # e3, e2, e1, e0 = self.subdenets[0](e4, e3, e2, e1, e0)
+            # if self.cal_num_decoders:
+            #     self.num_decoders += b
+
+            exit_index = torch.ones(e4.shape[0], device=e4.device) * (-1.)
+            pass_index = torch.arange(0, e4.shape[0], device=e4.device)
+            # if self.stem_method != 'stem_once':
+            x_img_out = torch.zeros((b, self.out_channels, h, w), device=e0.device)
+            # print(ics)
+            ic = torch.zeros_like(class_hard_simple_idx)
+            for i in range(self.num_subdenet):
+                # print(ic, out_x_idx)
+                # e3_pre = e3
+                if len(pass_index) > 0:
+                    exit_id = torch.where(ic == out_x_idx)[0]
+                    # print(ic, out_x_idx, exit_id, pass_index)
+                    ic = ic + 1
+                    remain_id = torch.where(exit_index < 0.0)[0]
+                    intersection_id = []
+                    for id in exit_id:
+                        if id in remain_id: intersection_id.append(int(id))
+                    exit_index[intersection_id] = i  # (i - (self.exit_interval - 1)) // self.exit_interval
+                    # if len(intersection_id) > 0:
+                    #     x_img_out[intersection_id, ...] += self.outputs[i - 1](e0[intersection_id, ...])
+                        # print('xxxxxx: ', x_img_out[intersection_id, ...].max(), x_img_out[intersection_id, ...].min())
+                    pass_index = torch.where(exit_index < 0.0)[0]
+                    # print('pass_index: ', pass_index)
+                    # print('intersection_id: ', intersection_id)
+                    # print('exit_id: ', exit_id)
+                    # if i == 0:
+                    #     if len(exit_id) > 0:
+                    #         x_img_out[exit_id, ...] = 0
+                    # print(exit_id, pass_index)
+                    if len(exit_id) > 0 and i >= 1:
+                        x_img_out[exit_id, ...] += self.outputs[i-1](e0[exit_id, ...])
+                    if len(pass_index) > 0:
+                        e3[pass_index, ...] = (self.subdenets[i].alpha0) * e3[pass_index, ...] + self.subdenets[
+                            i].level0(
+                            e4[pass_index, ...], e2[pass_index, ...])
+                        e2[pass_index, ...] = (self.subdenets[i].alpha1) * e2[pass_index, ...] + self.subdenets[
+                            i].level1(
+                            e3[pass_index, ...], e1[pass_index, ...])
+                        e1[pass_index, ...] = (self.subdenets[i].alpha2) * e1[pass_index, ...] + self.subdenets[
+                            i].level2(
+                            e2[pass_index, ...], e0[pass_index, ...])
+                        e0[pass_index, ...] = (self.subdenets[i].alpha3) * e0[pass_index, ...] + self.subdenets[
+                            i].level3(
+                            e1[pass_index, ...], None)
+                        if self.cal_num_decoders:
+                            self.num_decoders += len(pass_index)
+                        if i == self.num_subdenet - 1:
+                            x_img_out[pass_index, ...] += self.outputs[i](e0[pass_index, ...])
+
+                    else:
+                        break
+            return x_img_out
+        else:
+            e3, e2, e1, e0 = self.subdenets[0](e4, e3, e2, e1, e0)
+            if self.cal_num_decoders:
+                self.num_decoders += b
+            # if not self.test_only:
+            #     e0, e1, e2, e3, e4 = features
+            #     # print(e0.shape, e1.shape, e2.shape, e3.shape, e4.shape)
+            #     for i in range(1, self.num_subdenet):  # range(1): #
+            #         e3, e2, e1, e0 = self.subdenets[i](e4, e3, e2, e1, e0)
+            #     # d3_img = self.outputs[0](e0)
+            #     d3_img = self.outputs[-1](e0)
+            #     return d3_img
+            # else:
+            # print('Adaptive')
+            # self.exit_threshold = 0.
+            exit_index = torch.ones(e4.shape[0], device=e4.device) * (-1.)
+            pass_index = torch.arange(0, e4.shape[0], device=e4.device)
+            # if self.stem_method != 'stem_once':
+            x_img_out = torch.zeros((b, self.out_channels, h, w), device=e0.device)
+            # print(ics)
+            ic = torch.ones([e4.shape[0], 1], device=e4.device) * (-1.)
+            # e3, e2, e1, e0 = self.subdenets[0](e4, e3, e2, e1, e0)  # getattr(self, f'subdenet0')(d4, d0, d1, d2, d3)
+            # x_img_out += self.outputs[0](e0)
+            # return self.outputs[0](e0)
+
+            for i in range(1, self.num_subdenet):
+                # print(pass_index)
+                e3_pre = e3
+                if len(pass_index) > 0:
+                    if self.dx == 'fd4':
+                        dc = e3[pass_index, ...]
+                    elif self.dx == 'fd3':
+                        dc = e2[pass_index, ...]
+                    elif self.dx == 'fd2':
+                        dc = e1[pass_index, ...]
+                    elif self.dx == 'fd1':
+                        dc = e0[pass_index, ...]
+                    if '_d4' in self.dx:
+                        e3[pass_index, ...] = (self.subdenets[i].alpha0) * e3[pass_index, ...] + self.subdenets[i].level0(
+                            e4[pass_index, ...], e2[pass_index, ...])
+                    if self.dx == '_d4':
+                        dc = e3[pass_index, ...]
+                    elif self.dx == 'fd4_d4':
+                        dc = torch.cat([e3[pass_index, ...], e3_pre[pass_index, ...]], 1)
+                    elif self.dx == 'fd3_d4':
+                        dc = torch.cat([self.avgpool(e2[pass_index, ...]), self.avgpool(e3[pass_index, ...])], 1)
+                    elif self.dx == 'fd2_d4':
+                        dc = torch.cat([self.avgpool(e1[pass_index, ...]), self.avgpool(e3[pass_index, ...])], 1)
+                    elif self.dx == 'fd1_d4':
+                        dc = torch.cat([self.avgpool(e0[pass_index, ...]), self.avgpool(e3[pass_index, ...])], 1)
+                    if self.classifier_type == 'single':
+                        ic[pass_index, ...] = self.ape(dc)
+                    else:
+                        ic[pass_index, ...] = self.ape[i-1](dc)
+                     # .squeeze(-1)
+                    # e3[pass_index, ...] = (self.subdenets[i].alpha0) * e3[pass_index, ...] + self.subdenets[i].level0(
+                    #     e4[pass_index, ...], e2[pass_index, ...])
+                    #
+                    # ic[pass_index, ...] = self.ape(
+                    #     torch.cat([e3[pass_index, ...], e3_pre[pass_index, ...]], 1))  # .squeeze(-1)
+                    # print('ic: ', ic)
+                    # pass_index = torch.where(ic > self.exit_threshold)[0]
+                    exit_id = torch.where(ic <= self.exit_threshold[i-1])[0]
+                    remain_id = torch.where(exit_index < 0.0)[0]
+                    intersection_id = []
+                    for id in exit_id:
+                        if id in remain_id: intersection_id.append(int(id))
+                    exit_index[intersection_id] = i  # (i - (self.exit_interval - 1)) // self.exit_interval
+                    if len(intersection_id) > 0:
+                        x_img_out[intersection_id, ...] += self.outputs[i - 1](e0[intersection_id, ...])
+                        # print('xxxxxx: ', x_img_out[intersection_id, ...].max(), x_img_out[intersection_id, ...].min())
+                    pass_index = torch.where(exit_index < 0.0)[0]
+                    # print('pass_index: ', pass_index)
+                    # print('intersection_id: ', intersection_id)
+                    # print('exit_id: ', exit_id)
+                    if len(pass_index) > 0:
+                        if '_d4' not in self.dx:
+                            e3[pass_index, ...] = (self.subdenets[i].alpha0) * e3[pass_index, ...] + self.subdenets[i].level0(
+                                e4[pass_index, ...], e2[pass_index, ...])
+                        e2[pass_index, ...] = (self.subdenets[i].alpha1) * e2[pass_index, ...] + self.subdenets[i].level1(
+                            e3[pass_index, ...], e1[pass_index, ...])
+                        e1[pass_index, ...] = (self.subdenets[i].alpha2) * e1[pass_index, ...] + self.subdenets[i].level2(
+                            e2[pass_index, ...], e0[pass_index, ...])
+                        e0[pass_index, ...] = (self.subdenets[i].alpha3) * e0[pass_index, ...] + self.subdenets[i].level3(
+                            e1[pass_index, ...], None)
+                        if self.cal_num_decoders:
+                            self.num_decoders += len(pass_index)
+                        if i == self.num_subdenet - 1:
+                            x_img_out[pass_index, ...] += self.outputs[i](e0[pass_index, ...])
+                    else:
+                        break
+            # if self.stem_method == 'stem_once':
+            #     x_img_out = self.output(e0) + img
+            # print('yyyyyy: ', x_img_out.max(), x_img_out.min())
+            return x_img_out
+
+    def _forward_pretrain(self, features):
+
+        e0, e1, e2, e3, e4 = features
+        # print(e0.shape, e1.shape, e2.shape, e3.shape, e4.shape)
+        # for i in range(self.num_subdenet): #range(1): #
+        #     e3, e2, e1, e0 = self.subdenets[i](e4, e3, e2, e1, e0)
+        # # d3_img = self.outputs[0](e0)
+        # d3_img = self.outputs[-1](e0)
+        for i in range(self.decoder_idx): #range(1): #
+            e3, e2, e1, e0 = self.subdenets[i](e4, e3, e2, e1, e0)
+
+        d3_img = self.outputs[self.decoder_idx-1](e0)
+        return d3_img
 class PatchAdaRevIDSlideV2(nn.Module):
     def __init__(self, width=64, in_channels=3, out_channels=3,
                  decoder_layers=[1, 1, 1, 1], baseblock=['naf', 'naf', 'naf', 'naf'],
