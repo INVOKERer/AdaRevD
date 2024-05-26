@@ -1,3 +1,6 @@
+## Restormer: Efficient Transformer for High-Resolution Image Restoration
+## Syed Waqas Zamir, Aditya Arora, Salman Khan, Munawar Hayat, Fahad Shahbaz Khan, and Ming-Hsuan Yang
+## https://arxiv.org/abs/2111.09881
 
 ##### Data preparation file for training Restormer on the GoPro Dataset ########
 
@@ -65,18 +68,15 @@ def val_files(file_):
 
 ############ Prepare Training data ####################
 num_cores = 10
-# patch_size = 512
-# overlap = 256
+patch_size = 512
+overlap = 256
 p_max = 0
 
-patch_size = 384
-# overlap = 0
-overlap = 48
-src = '/home/ubuntu/106-48t/personal_data/mxt/Datasets/Deblur/HIDE/test'
-tar = '/home/ubuntu/106-48t/personal_data/mxt/Datasets/Deblur/HIDE/test'
+src = '/data/mxt_data/GoPro/train'
+tar = '/data/mxt_data/GoPro/train'
 
-lr_tar = os.path.join(tar, 'input_crops_384')
-hr_tar = os.path.join(tar, 'target_crops_384')
+lr_tar = os.path.join(tar, 'input_crops')
+hr_tar = os.path.join(tar, 'target_crops')
 
 os.makedirs(lr_tar, exist_ok=True)
 os.makedirs(hr_tar, exist_ok=True)
@@ -90,20 +90,19 @@ Parallel(n_jobs=num_cores)(delayed(train_files)(file_) for file_ in tqdm(files))
 
 
 ############ Prepare validation data ####################
-# val_patch_size = 256
-val_patch_size = 384
-# src = '/home/ubuntu/Data1/mxt/GoPro/test'
-# tar = '/home/ubuntu/Data1/mxt/GoPro/val'
-#
-# lr_tar = os.path.join(tar, 'input_crops_384')
-# hr_tar = os.path.join(tar, 'target_crops_384')
-#
-# os.makedirs(lr_tar, exist_ok=True)
-# os.makedirs(hr_tar, exist_ok=True)
-#
-# lr_files = natsorted(glob(os.path.join(src, 'blur', '*.png')) + glob(os.path.join(src, 'blur', '*.jpg')))
-# hr_files = natsorted(glob(os.path.join(src, 'sharp', '*.png')) + glob(os.path.join(src, 'sharp', '*.jpg')))
-#
-# files = [(i, j) for i, j in zip(lr_files, hr_files)]
-#
-# Parallel(n_jobs=num_cores)(delayed(val_files)(file_) for file_ in tqdm(files))
+val_patch_size = 256
+src = '/data/mxt_data/GoPro/test'
+tar = '/data/mxt_data/GoPro/val'
+
+lr_tar = os.path.join(tar, 'input_crops')
+hr_tar = os.path.join(tar, 'target_crops')
+
+os.makedirs(lr_tar, exist_ok=True)
+os.makedirs(hr_tar, exist_ok=True)
+
+lr_files = natsorted(glob(os.path.join(src, 'blur', '*.png')) + glob(os.path.join(src, 'blur', '*.jpg')))
+hr_files = natsorted(glob(os.path.join(src, 'sharp', '*.png')) + glob(os.path.join(src, 'sharp', '*.jpg')))
+
+files = [(i, j) for i, j in zip(lr_files, hr_files)]
+
+Parallel(n_jobs=num_cores)(delayed(val_files)(file_) for file_ in tqdm(files))
