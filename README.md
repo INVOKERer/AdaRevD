@@ -1,4 +1,9 @@
-
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adarevd-adaptive-patch-exiting-reversible/image-deblurring-on-gopro)](https://paperswithcode.com/sota/image-deblurring-on-gopro?p=adarevd-adaptive-patch-exiting-reversible)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adarevd-adaptive-patch-exiting-reversible/deblurring-on-hide-trained-on-gopro)](https://paperswithcode.com/sota/deblurring-on-hide-trained-on-gopro?p=adarevd-adaptive-patch-exiting-reversible)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adarevd-adaptive-patch-exiting-reversible/deblurring-on-realblur-j-1)](https://paperswithcode.com/sota/deblurring-on-realblur-j-1?p=adarevd-adaptive-patch-exiting-reversible)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adarevd-adaptive-patch-exiting-reversible/deblurring-on-realblur-j-trained-on-gopro)](https://paperswithcode.com/sota/deblurring-on-realblur-j-trained-on-gopro?p=adarevd-adaptive-patch-exiting-reversible)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adarevd-adaptive-patch-exiting-reversible/deblurring-on-realblur-r)](https://paperswithcode.com/sota/deblurring-on-realblur-r?p=adarevd-adaptive-patch-exiting-reversible)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adarevd-adaptive-patch-exiting-reversible/deblurring-on-realblur-r-trained-on-gopro)](https://paperswithcode.com/sota/deblurring-on-realblur-r-trained-on-gopro?p=adarevd-adaptive-patch-exiting-reversible)
 
 # [AdaRevD: Adaptive Patch Exiting Reversible Decoder Pushes the Limit of Image Deblurring (CVPR2024)](https://openaccess.thecvf.com/content/CVPR2024/html/Mao_AdaRevD_Adaptive_Patch_Exiting_Reversible_Decoder_Pushes_the_Limit_of_CVPR_2024_paper.html)
 [Xintian Mao](https://scholar.google.es/citations?user=eM5Ogs8AAAAJ&hl=en), Qingli Li and [Yan Wang](https://scholar.google.com/citations?user=5a1Cmk0AAAAJ&hl=en)
