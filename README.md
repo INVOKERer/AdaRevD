@@ -1,11 +1,10 @@
 
 
-# AdaRevD: Adaptive Patch Exiting Reversible Decoder Pushes the Limit of Image Deblurring (CVPR2024)
+# [AdaRevD: Adaptive Patch Exiting Reversible Decoder Pushes the Limit of Image Deblurring (CVPR2024)](https://openaccess.thecvf.com/content/CVPR2024/html/Mao_AdaRevD_Adaptive_Patch_Exiting_Reversible_Decoder_Pushes_the_Limit_of_CVPR_2024_paper.html)
 [Xintian Mao](https://scholar.google.es/citations?user=eM5Ogs8AAAAJ&hl=en), Qingli Li and [Yan Wang](https://scholar.google.com/citations?user=5a1Cmk0AAAAJ&hl=en)
 
 
 
-[Paper](https://openaccess.thecvf.com/content/CVPR2024/html/Mao_AdaRevD_Adaptive_Patch_Exiting_Reversible_Decoder_Pushes_the_Limit_of_CVPR_2024_paper.html)
 
 
 ## Quick Run
