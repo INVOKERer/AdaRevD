@@ -5,7 +5,7 @@
 
 
 
-Paper: https://github.com/INVOKERer/AdaRevD/blob/master/AdaRevD.pdf
+[Paper](https://openaccess.thecvf.com/content/CVPR2024/html/Mao_AdaRevD_Adaptive_Patch_Exiting_Reversible_Decoder_Pushes_the_Limit_of_CVPR_2024_paper.html)
 
 
 ## Quick Run
