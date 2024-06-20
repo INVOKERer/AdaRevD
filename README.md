@@ -27,7 +27,7 @@ cd AdaRevD
 ```
 
 ## Evaluation
-To test the pre-trained models [百度网盘](https://pan.baidu.com/s/1AttePVDB1IcfLPMscg1-Bg)(提取码:dfce) on your own images, run 
+To test the pre-trained models [百度网盘](https://pan.baidu.com/s/1AttePVDB1IcfLPMscg1-Bg)(提取码:dfce) on your own images (turn the 'pretrain' in yml from false to true for RevD), run 
 ```
 python Motion_Deblurring/val.py 
 ```
