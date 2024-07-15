@@ -27,14 +27,14 @@ cd AdaRevD
 ```
 
 ## Evaluation
-To test the pre-trained models [百度网盘](https://pan.baidu.com/s/1AttePVDB1IcfLPMscg1-Bg)(提取码:dfce) on your own images (turn the 'pretrain' in yml from false to true for RevD), run 
+To test the pre-trained models [Google Drive](https://drive.google.com/drive/folders/1_MXPwe5UzW_Go14Z9j7LxYB19ofH4_yv?usp=sharing) or [百度网盘](https://pan.baidu.com/s/1AttePVDB1IcfLPMscg1-Bg)(提取码:dfce) on your own images (turn the 'pretrain' in yml from false to true for RevD), run 
 ```
 python Motion_Deblurring/val.py 
 ```
 
 ## Results
 Results on GoPro, HIDE, Realblur test sets:
-[百度网盘](https://pan.baidu.com/s/1xoEgsisdnMnjbEHcCXOa2Q)(提取码:27ex)
+[Google Drive](https://drive.google.com/drive/folders/1_MXPwe5UzW_Go14Z9j7LxYB19ofH4_yv?usp=sharing) or [百度网盘](https://pan.baidu.com/s/1xoEgsisdnMnjbEHcCXOa2Q)(提取码:27ex)
 
 ## Citation
 If you use , please consider citing:
