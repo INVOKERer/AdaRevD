@@ -50,7 +50,7 @@ args = parser.parse_args()
 # yaml_file = 'Options/AdaRevID-GoPro-rebuttal-test.yml'
 # yaml_file = 'Options/NAFNet-width64.yml'
 # yaml_file = 'Options/AdaRevIDB-Adaptive-test.yml'
-yaml_file = 'Options/AdaRevID-GoPro-test.yml'
+yaml_file = 'Options/AdaRevID-B-GoPro-test.yml'
 # yaml_file = 'Options/AdaRevID-RealBlur-R-test.yml'
 # yaml_file = 'Options/AdaRevID-RealBlur-J-test.yml'
 import yaml
