@@ -53,7 +53,7 @@ If you have any question, please contact mxt_invoker1997@163.com
 - Deep Residual Fourier Transformation for Single Image Deblurring, arXiv 2021. [Paper](https://arxiv.org/abs/2111.11745v1) | [Code](https://github.com/INVOKERer/DeepRFT)
 - Intriguing Findings of Frequency Selection for Image Deblurring, AAAI 2023. [Paper](https://arxiv.org/abs/2111.11745) | [Code](https://github.com/DeepMed-Lab-ECNU/DeepRFT-AAAI2023)
 - LoFormer: Local Frequency Transformer for Image Deblurring, ACM MM 2024. [Paper](https://arxiv.org/abs/2407.16993) | [Code](https://github.com/INVOKERer/LoFormer)
-- 
+
 ## Reference Code:
 - https://github.com/Fangzhenxuan/UFPDeblur
 - https://github.com/megvii-research/NAFNet
