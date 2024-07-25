@@ -123,10 +123,11 @@ class Dataset_PairedImage(data.Dataset):
                 img_gt, img_lq = random_augmentation(img_gt, img_lq)
         if self.opt['phase'] == 'val':
             gt_size = self.opt['crop_size']
-            # padding
-            img_gt, img_lq = padding(img_gt, img_lq, gt_size)
-            img_gt, img_lq = paired_center_crop(img_gt, img_lq, gt_size, scale,
-                                                gt_path)
+            if gt_size is not None or gt_size > 0:
+                # padding
+                img_gt, img_lq = padding(img_gt, img_lq, gt_size)
+                img_gt, img_lq = paired_center_crop(img_gt, img_lq, gt_size, scale,
+                                                    gt_path)
         # BGR to RGB, HWC to CHW, numpy to tensor
         img_gt, img_lq = img2tensor([img_gt, img_lq],
                                     bgr2rgb=True,
