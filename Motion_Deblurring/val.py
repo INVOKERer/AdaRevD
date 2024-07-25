@@ -12,7 +12,7 @@ import time
 from natsort import natsorted
 from glob import glob
 
-from basicsr.models.archs.AdaRevID_arch import AdaRevIDSlideV2 as Net
+from basicsr.models.archs.AdaRevID_arch import AdaRevIDSlide as Net
 from skimage import img_as_ubyte
 from collections import OrderedDict
 from pdb import set_trace as stx
