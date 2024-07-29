@@ -44,6 +44,8 @@ datasets:
 #    dataroot_lq: ~/Data1/mxt/GoPro/val/input_crops
     dataroot_gt: /data/mxt_data/GoPro/val/target_crops
     dataroot_lq: /data/mxt_data/GoPro/val/input_crops
+    crop_size: 256
+    crop_sizes: [256]
     io_backend:
       type: disk
 
