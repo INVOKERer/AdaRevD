@@ -46,6 +46,8 @@ datasets:
 #    dataroot_lq: ~/Data1/mxt/RealBlur/RealBlur_R/val/input_crops
     dataroot_gt: /data/mxt_data/RealBlur/RealBlur_R/val/target_crops
     dataroot_lq: /data/mxt_data/RealBlur/RealBlur_R/val/input_crops
+    crop_size: 256
+    crop_sizes: [256]
 #    dataroot_gt: /data/mxt_data/GoPro/val/target_crops
 #    dataroot_lq: /data/mxt_data/GoPro/val/input_crops
     io_backend:
