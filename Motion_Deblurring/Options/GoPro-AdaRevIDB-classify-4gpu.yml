@@ -48,6 +48,8 @@ datasets:
 #    [18., 21., 24., 27., 30., 33., 36., 39.] # [15., 25., 35.] # [21., 27., 33., 39.] # [19., 23., 27., 31., 35., 39.] # [20., 25., 30., 35., 40.]
     dataroot_gt: /data/mxt_data/GoPro/test/target_crops_384
     dataroot_lq: /data/mxt_data/GoPro/test/input_crops_384
+    crop_size: 384
+    crop_sizes: [384]
     io_backend:
       type: disk
 
