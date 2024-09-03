@@ -12,8 +12,7 @@ import utils
 
 from natsort import natsorted
 from glob import glob
-# from basicsr.models.archs.restormer_arch import Restormer
-from basicsr.models.archs.mestormer_arch import Mestormer
+from basicsr.models.archs.restormer_arch import Restormer
 from skimage import img_as_ubyte
 from pdb import set_trace as stx
 
