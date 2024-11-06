@@ -75,7 +75,7 @@ network_g:
   exit_idx: [4, 4, 3, 3, 2, 1]
   # Big: 0.1: [4, 3, 2, 2, 1, 1]  0.05: [4, 4, 3, 3, 2, 1]
   # large: 0.05: [7, 6, 5, 2, 2, 2]
-  decoder_idx: 8
+  decoder_idx: 4
   exit_threshold: 0.05
   cal_num_decoders: true
 #  return_cls: true
