@@ -85,9 +85,7 @@ train:
   use_grad_clip: false # true
 #  loss_clamp: [0., 0.1]
   ema_decay: 0.999
-  # Split 300k iterations into two cycles.
-  # 1st cycle: fixed 3e-4 LR for 92k iters.
-  # 2nd cycle: cosine annealing (3e-4 to 1e-6) for 208k iters.
+  
   scheduler:
     type: TrueCosineAnnealingLR
     T_max: 200000
